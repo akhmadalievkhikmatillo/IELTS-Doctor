@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>IELTS Doctor | AI Examiner</title>
+<meta name="description" content="Your AI based IELTS Doctor">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root {
+    --bg:#0d1117;--surface:#161b22;--surface2:#1c2330;--border:#30363d;
+    --accent:#58a6ff;--accent2:#3fb950;--gold:#d29922;--red:#f85149;
+    --text:#e6edf3;--muted:#7d8590;--part1:#388bfd;--part2:#a371f7;--part3:#f78166;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+  .screen{display:none;flex-direction:column;min-height:100vh}
+  .screen.active{display:flex}
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px 8px;background:none;border:none;color:var(--muted);font-family:'Sora',sans-serif;font-size:10px;cursor:pointer;transition:color .2s}
+  .nav-btn.active{color:var(--accent)}
+  .nav-btn svg{width:22px;height:22px}
+  .scroll-area{flex:1;overflow-y:auto;padding:16px 16px 90px;-webkit-overflow-scrolling:touch}
+
+  /* LOGO */
+  .logo-bar{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  .logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--part2));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .logo-text{font-size:16px;font-weight:700;line-height:1.2}
+  .logo-slogan{font-size:11px;color:var(--muted)}
+
+  /* HOME */
+  .streak-card{background:linear-gradient(135deg,#1a2332,#1c2b1a);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:14px}
+  .streak-num{font-size:28px;font-weight:700;color:#ff7b2c}
+  .streak-label{font-size:12px;color:var(--muted)}
+  .week-dots{display:flex;gap:6px;margin-top:8px}
+  .week-dot{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted)}
+  .week-dot.today{border-color:var(--accent);color:var(--accent)}
+  .week-dot.done{background:var(--accent2);border-color:var(--accent2);color:#fff}
+  .section-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+  .quick-start-btn{width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#1f6feb);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;transition:opacity .2s}
+  .quick-start-btn:active{opacity:.8}
+  .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}
+  .stat-num{font-size:24px;font-weight:700;color:var(--accent)}
+  .stat-label{font-size:11px;color:var(--muted);margin-top:2px}
+  .part-cards{display:flex;flex-direction:column;gap:10px}
+  .part-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .1s}
+  .part-card:active{transform:scale(.98)}
+  .part-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .part-card-info{flex:1}
+  .part-card-title{font-size:14px;font-weight:600}
+  .part-card-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+  /* SELECT PART */
+  .big-part-card{border-radius:16px;padding:20px;margin-bottom:12px;cursor:pointer;transition:transform .15s,opacity .15s}
+  .big-part-card:active{transform:scale(.97);opacity:.85}
+  .big-part-num{font-size:11px;font-weight:600;opacity:.7;text-transform:uppercase;letter-spacing:.08em}
+  .big-part-name{font-size:18px;font-weight:700;margin:4px 0}
+  .big-part-desc{font-size:13px;opacity:.75;line-height:1.5}
+  .big-part-meta{font-size:11px;opacity:.6;margin-top:8px}
+
+  /* SPEAKING */
+  .speaking-header{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  .part-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+  .question-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px}
+  .question-label{font-size:11px;color:var(--muted);margin-bottom:8px}
+  .question-text{font-size:16px;font-weight:500;line-height:1.6}
+  .cue-card{background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--part2);border-radius:16px;padding:18px;margin-bottom:16px}
+  .cue-title{font-size:14px;font-weight:600;color:var(--part2);margin-bottom:10px}
+  .cue-points{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .cue-points li{font-size:13px;padding-left:16px;position:relative}
+  .cue-points li::before{content:'•';position:absolute;left:0;color:var(--part2)}
+  .timer-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+  .timer-text{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500}
+  .timer-label{font-size:12px;color:var(--muted)}
+  .timer-fill{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+  .timer-fill-inner{height:100%;background:var(--accent2);border-radius:2px;transition:width .5s}
+  .text-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;color:var(--text);font-family:'Sora',sans-serif;font-size:14px;line-height:1.6;resize:none;min-height:120px;outline:none;transition:border-color .2s}
+  .text-input:focus{border-color:var(--accent)}
+  .text-input::placeholder{color:var(--muted)}
+  .mic-area{display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+  .mic-btn{width:68px;height:68px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:28px;transition:all .2s}
+  .mic-btn.recording{background:rgba(248,81,73,.15);border-color:var(--red);animation:pulse 1.2s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(248,81,73,.4)}50%{box-shadow:0 0 0 12px rgba(248,81,73,0)}}
+  .mic-label{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+  .or-divider{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+  .or-divider span{font-size:11px;color:var(--muted)}
+  .submit-btn{width:100%;padding:15px;border-radius:14px;background:linear-gradient(135deg,var(--accent2),#238636);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s}
+  .submit-btn:active{opacity:.8}
+  .next-btn{width:100%;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'Sora',sans-serif;font-size:14px;font-weight:500;cursor:pointer;margin-top:10px}
+
+  /* FEEDBACK */
+  .feedback-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px}
+  .band-score{font-size:52px;font-weight:700;background:linear-gradient(135deg,var(--gold),#f0ad00);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .criteria-grid{display:flex;flex-direction:column;gap:10px}
+  .criterion{display:flex;align-items:center;gap:10px}
+  .criterion-name{font-size:12px;color:var(--muted);width:105px;flex-shrink:0}
+  .criterion-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+  .criterion-fill{height:100%;border-radius:3px;transition:width 1s ease}
+  .criterion-score{font-size:13px;font-weight:600;width:24px;text-align:right}
+  .feedback-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-bottom:8px}
+  .feedback-tag.good{background:rgba(63,185,80,.15);color:var(--accent2)}
+  .feedback-tag.improve{background:rgba(210,153,34,.15);color:var(--gold)}
+  .feedback-text{font-size:13px;line-height:1.7}
+
+  /* PROGRESS */
+  .progress-chart{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px}
+  .chart-bars{display:flex;align-items:flex-end;gap:8px;height:90px;margin-top:12px}
+  .chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .chart-bar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(to top,var(--accent),#1f6feb)}
+  .chart-bar-label{font-size:9px;color:var(--muted)}
+  .history-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+  .history-part-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .history-info{flex:1}
+  .history-q{font-size:13px}
+  .history-meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .history-band{font-size:18px;font-weight:700;color:var(--gold);font-family:'JetBrains Mono',monospace}
+
+  /* LOADING */
+  .loading-overlay{position:fixed;inset:0;background:rgba(13,17,23,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px}
+  .loading-overlay.show{display:flex}
+  .spinner{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-size:14px;color:var(--muted);text-align:center}
+  .loading-brand{font-size:12px;color:var(--accent);font-weight:600;margin-top:4px}
+
+  .back-btn{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;padding:0 4px;line-height:1}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">AI Examiner baholayapti...</div>
+  <div class="loading-brand">IELTS Doctor 🩺</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     HOME
+════════════════════════════════════════ -->
+<div class="screen active" id="screen-home">
+  <div class="scroll-area">
+
+    <div class="logo-bar">
+      <div class="logo-icon">🩺</div>
+      <div>
+        <div class="logo-text">IELTS Doctor</div>
+        <div class="logo-slogan">Your AI based IELTS Doctor</div>
+      </div>
+    </div>
+
+    <div class="streak-card">
+      <div style="font-size:36px">🔥</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <div class="streak-num" id="streakNum">0</div>
+          <div class="streak-label">kunlik streak</div>
+        </div>
+        <div class="week-dots" id="weekDots"></div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num" id="totalSessions">0</div>
+        <div class="stat-label">Jami sessiyalar</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="avgBand" style="color:var(--gold)">—</div>
+        <div class="stat-label">O'rtacha band</div>
+      </div>
+    </div>
+
+    <button class="quick-start-btn" onclick="showScreen('select')">
+      🎤 &nbsp; Speaking boshlash
+    </button>
+
+    <div class="section-title">Qismlar</div>
+    <div class="part-cards">
+      <div class="part-card" onclick="startPart(1)">
+        <div class="part-dot" style="background:var(--part1)"></div>
+        <div class="part-card-info">
+          <div class="part-card-title">Part 1 — Introduction</div>
+          <div class="part-card-sub">Shaxsiy savollar · 4–5 daqiqa</div>
+        </div>
+        <div style="color:var(--muted);font-size:20px">›</div>
+      </div>
+      <div class="part-card" onclick="startPart(2)">
+        <div class="part-dot" style="background:var(--part2)"></div>
+        <div class="part-card-info">
+          <div class="part-card-title">Part 2 — Cue Card</div>
+          <div class="part-card-sub">Mavzu tavsifi · 3–4 daqiqa</div>
+        </div>
+        <div style="color:var(--muted);font-size:20px">›</div>
+      </div>
+      <div class="part-card" onclick="startPart(3)">
+        <div class="part-dot" style="background:var(--part3)"></div>
+        <div class="part-card-info">
+          <div class="part-card-title">Part 3 — Discussion</div>
+          <div class="part-card-sub">Chuqur munozara · 4–5 daqiqa</div>
+        </div>
+        <div style="color:var(--muted);font-size:20px">›</div>
+      </div>
+    </div>
+
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="showScreen('home')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home
+    </button>
+    <button class="nav-btn" onclick="showScreen('select')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/></svg>Speaking
+    </button>
+    <button class="nav-btn" onclick="showScreen('progress')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Progress
+    </button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════════
+     SELECT PART
+════════════════════════════════════════ -->
+<div class="screen" id="screen-select">
+  <div class="scroll-area">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <button class="back-btn" onclick="showScreen('home')">‹</button>
+      <div>
+        <div style="font-size:20px;font-weight:700">Qism tanlang</div>
+        <div style="font-size:13px;color:var(--muted)">Qaysi IELTS qismini mashq qilasiz?</div>
+      </div>
+    </div>
+
+    <div class="big-part-card" style="background:linear-gradient(135deg,#0d1f3c,#1a3354)" onclick="startPart(1)">
+      <div class="big-part-num" style="color:var(--part1)">Part 1</div>
+      <div class="big-part-name">Introduction & Interview</div>
+      <div class="big-part-desc">O'zingiz, oilangiz, ish/ta'lim va sevimli narsalaringiz haqida oddiy savollar</div>
+      <div class="big-part-meta">⏱ 4–5 min &nbsp;·&nbsp; 3–5 savol</div>
+    </div>
+
+    <div class="big-part-card" style="background:linear-gradient(135deg,#160d2e,#251545)" onclick="startPart(2)">
+      <div class="big-part-num" style="color:var(--part2)">Part 2</div>
+      <div class="big-part-name">Individual Long Turn</div>
+      <div class="big-part-desc">Cue card asosida 1–2 daqiqa uzluksiz gapirish. Tayyorlanishga 1 daqiqa beriladi.</div>
+      <div class="big-part-meta">⏱ 3–4 min &nbsp;·&nbsp; 1 mavzu + tayyorlanish</div>
+    </div>
+
+    <div class="big-part-card" style="background:linear-gradient(135deg,#2a100a,#3d1610)" onclick="startPart(3)">
+      <div class="big-part-num" style="color:var(--part3)">Part 3</div>
+      <div class="big-part-name">Two-way Discussion</div>
+      <div class="big-part-desc">Part 2 mavzusi bilan bog'liq murakkab, abstrakt savollar va munozara</div>
+      <div class="big-part-meta">⏱ 4–5 min &nbsp;·&nbsp; 5–7 savol</div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('home')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</button>
+    <button class="nav-btn active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/></svg>Speaking</button>
+    <button class="nav-btn" onclick="showScreen('progress')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Progress</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════════
+     SPEAKING
+════════════════════════════════════════ -->
+<div class="screen" id="screen-speaking">
+  <div class="scroll-area">
+    <div class="speaking-header">
+      <button class="back-btn" onclick="showScreen('select')">‹</button>
+      <div id="partBadge" class="part-badge"></div>
+      <div style="margin-left:auto;font-size:12px;color:var(--muted)" id="questionCounter"></div>
+    </div>
+
+    <div id="cueCardArea" style="display:none"></div>
+
+    <div class="question-card">
+      <div class="question-label" id="questionLabel">Savol</div>
+      <div class="question-text" id="questionText">Yuklanmoqda...</div>
+    </div>
+
+    <div class="timer-bar">
+      <div style="font-size:18px">⏱</div>
+      <div>
+        <div class="timer-text" id="timerText">02:00</div>
+        <div class="timer-label" id="timerLabel">Javob vaqti</div>
+      </div>
+      <div class="timer-fill"><div class="timer-fill-inner" id="timerFill" style="width:100%"></div></div>
+    </div>
+
+    <div class="mic-area">
+      <div style="text-align:center">
+        <div class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</div>
+        <div class="mic-label" id="micLabel">Bosib gapiring</div>
+      </div>
+    </div>
+
+    <div class="or-divider"><span>yoki yozib kiriting</span></div>
+
+    <div style="margin-bottom:16px">
+      <textarea class="text-input" id="answerInput"
+        placeholder="Javobingizni bu yerga yozing...&#10;&#10;Masalan: I think the most interesting place I have visited was Samarkand because..."></textarea>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">
+      ✅ &nbsp; Baholashga yuborish
+    </button>
+    <button class="next-btn" id="nextBtn" style="display:none" onclick="nextQuestion()">
+      Keyingi savol →
+    </button>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('home')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</button>
+    <button class="nav-btn active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/></svg>Speaking</button>
+    <button class="nav-btn" onclick="showScreen('progress')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Progress</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════════
+     FEEDBACK
+════════════════════════════════════════ -->
+<div class="screen" id="screen-feedback">
+  <div class="scroll-area">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <button class="back-btn" onclick="showScreen('speaking')">‹</button>
+      <div>
+        <div style="font-size:18px;font-weight:700">AI Examiner Feedback</div>
+        <div style="font-size:12px;color:var(--muted)">IELTS Doctor 🩺</div>
+      </div>
+    </div>
+
+    <div class="feedback-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Overall Band Score</div>
+          <div class="band-score" id="fbBand">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:600" id="fbLevel">—</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px" id="fbPartLabel">—</div>
+        </div>
+      </div>
+      <div class="criteria-grid" id="criteriaGrid"></div>
+    </div>
+
+    <div class="feedback-card">
+      <div class="feedback-tag good">✓ &nbsp;Kuchli tomonlar</div>
+      <div class="feedback-text" id="fbStrengths">—</div>
+    </div>
+
+    <div class="feedback-card">
+      <div class="feedback-tag improve">↑ &nbsp;Yaxshilash kerak</div>
+      <div class="feedback-text" id="fbImprov">—</div>
+    </div>
+
+    <div class="feedback-card" id="exampleCard" style="display:none">
+      <div class="feedback-tag" style="background:rgba(88,166,255,.12);color:var(--accent)">💡 &nbsp;Namuna javob</div>
+      <div class="feedback-text" id="fbExample">—</div>
+    </div>
+
+    <button class="submit-btn" style="margin-top:4px" onclick="nextQuestion()">
+      ➡ &nbsp;Keyingi savol
+    </button>
+    <button class="next-btn" onclick="showScreen('home')" style="margin-top:10px">
+      🏠 &nbsp;Bosh sahifaga
+    </button>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('home')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</button>
+    <button class="nav-btn active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/></svg>Speaking</button>
+    <button class="nav-btn" onclick="showScreen('progress')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Progress</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════════
+     PROGRESS
+════════════════════════════════════════ -->
+<div class="screen" id="screen-progress">
+  <div class="scroll-area">
+    <div class="logo-bar" style="margin-bottom:20px">
+      <div class="logo-icon">📊</div>
+      <div>
+        <div class="logo-text">Progress</div>
+        <div class="logo-slogan">Sizning natijalaringiz</div>
+      </div>
+    </div>
+
+    <div class="progress-chart">
+      <div style="font-size:14px;font-weight:600">Band Score Dinamikasi</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">Oxirgi 7 sessiya</div>
+      <div class="chart-bars" id="progressBars">
+        <div style="color:var(--muted);font-size:13px;text-align:center;width:100%;padding-top:28px">
+          Hali sessiya yo'q. Birinchi testni bajaring! 🎯
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:14px;font-weight:600;margin-bottom:10px">Oxirgi sessiyalar</div>
+    <div id="historyList">
+      <div style="color:var(--muted);font-size:13px;text-align:center;padding:30px 0">Hali natija yo'q</div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('home')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</button>
+    <button class="nav-btn" onclick="showScreen('select')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/></svg>Speaking</button>
+    <button class="nav-btn active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Progress</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════ -->
+<script>
+// ─── QUESTIONS BANK ───────────────────────────────────────────
+const QUESTIONS = {
+  1: [
+    "Tell me about where you come from. What is your hometown like?",
+    "Do you work or are you a student? What do you enjoy most about it?",
+    "What do you usually do in your free time?",
+    "How important is it for you to learn English? Why?",
+    "Do you enjoy cooking? What kinds of food do you usually make?",
+    "How do you usually travel around your city?",
+    "What kind of music do you enjoy listening to?",
+    "Do you prefer spending time indoors or outdoors? Why?",
+    "Do you enjoy reading? What kinds of books do you like?",
+    "How often do you use social media? What do you mainly use it for?",
+    "Do you prefer mornings or evenings? Why?",
+    "What kind of weather do you like the most?",
+  ],
+  2: [
+    { topic: "Describe a memorable journey you have taken.", points: ["Where you went", "Who you went with", "What you did there", "Why it was memorable"] },
+    { topic: "Describe a person who has influenced you greatly.", points: ["Who this person is", "How you know them", "What they did", "How they influenced you"] },
+    { topic: "Describe a skill you would like to learn.", points: ["What the skill is", "Why you want to learn it", "How you would learn it", "How it would benefit you"] },
+    { topic: "Describe a book or film that had a strong effect on you.", points: ["What it was about", "When you read/watched it", "What happened in it", "Why it affected you"] },
+    { topic: "Describe a place you would like to visit in the future.", points: ["Where it is", "Why you want to go there", "What you would do there", "Who you would go with"] },
+    { topic: "Describe an achievement you are proud of.", points: ["What the achievement was", "When it happened", "How you achieved it", "Why you are proud of it"] },
+  ],
+  3: [
+    "In your opinion, how has technology changed the way people communicate?",
+    "Some people believe that globalization is erasing local cultures. What do you think?",
+    "Do you think governments should invest more in public transportation? Why?",
+    "How do you think education systems could be improved in developing countries?",
+    "What are the advantages and disadvantages of social media for young people?",
+    "Do you think environmental problems are best solved at an individual or government level?",
+    "How has the role of women in society changed over the past few decades?",
+    "What do you think are the main causes of income inequality in modern societies?",
+    "Should universities focus more on practical skills or theoretical knowledge? Why?",
+    "How do you think remote work has changed people's relationship with their jobs?",
+  ]
+};
+
+// ─── STATE ────────────────────────────────────────────────────
+const state = {
+  currentPart: 1,
+  currentQuestion: null,
+  questionIndex: 0,
+  sessions: JSON.parse(localStorage.getItem('ielts_doctor_sessions') || '[]'),
+  streak: parseInt(localStorage.getItem('ielts_doctor_streak') || '0'),
+  lastDate: localStorage.getItem('ielts_doctor_lastDate') || '',
+  isRecording: false,
+  recognition: null,
+  timerInterval: null,
+  timerSeconds: 0,
+  maxSeconds: 120,
+};
+
+// ─── NAVIGATION ───────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (name === 'home') renderHome();
+  if (name === 'progress') renderProgress();
+}
+
+// ─── HOME ─────────────────────────────────────────────────────
+function renderHome() {
+  document.getElementById('streakNum').textContent = state.streak;
+  document.getElementById('totalSessions').textContent = state.sessions.length;
+
+  if (state.sessions.length > 0) {
+    const avg = state.sessions.reduce((a, b) => a + b.band, 0) / state.sessions.length;
+    document.getElementById('avgBand').textContent = avg.toFixed(1);
+  }
+
+  // Week dots
+  const days = ['M','T','W','T','F','S','S'];
+  const todayDay = new Date().getDay(); // 0=Sun
+  const wd = document.getElementById('weekDots');
+  wd.innerHTML = '';
+  days.forEach((d, i) => {
+    const el = document.createElement('div');
+    const dayNum = i === 6 ? 0 : i + 1;
+    el.className = 'week-dot' + (dayNum === todayDay ? ' today' : '');
+    el.textContent = d;
+    wd.appendChild(el);
+  });
+}
+
+// ─── START PART ───────────────────────────────────────────────
+function startPart(part) {
+  state.currentPart = part;
+  state.questionIndex = 0;
+  showScreen('speaking');
+  loadQuestion();
+}
+
+function loadQuestion() {
+  const pool = QUESTIONS[state.currentPart];
+  const q = pool[Math.floor(Math.random() * pool.length)];
+  state.currentQuestion = q;
+  state.questionIndex++;
+
+  // Reset UI
+  document.getElementById('answerInput').value = '';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('submitBtn').style.display = 'flex';
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micBtn').textContent = '🎤';
+  document.getElementById('micLabel').textContent = 'Bosib gapiring';
+
+  // Badge
+  const bgMap = { 1: 'rgba(56,139,253,.15)', 2: 'rgba(163,113,247,.15)', 3: 'rgba(247,129,102,.15)' };
+  const clrMap = { 1: 'var(--part1)', 2: 'var(--part2)', 3: 'var(--part3)' };
+  const badge = document.getElementById('partBadge');
+  badge.textContent = 'Part ' + state.currentPart;
+  badge.style.background = bgMap[state.currentPart];
+  badge.style.color = clrMap[state.currentPart];
+  document.getElementById('questionCounter').textContent = '#' + state.questionIndex;
+
+  if (state.currentPart === 2) {
+    document.getElementById('cueCardArea').style.display = 'block';
+    document.getElementById('cueCardArea').innerHTML = `
+      <div class="cue-card">
+        <div class="cue-title">📋 Cue Card</div>
+        <ul class="cue-points">
+          ${q.points.map(p => `<li>${p}</li>`).join('')}
+        </ul>
+        <div style="margin-top:10px;font-size:11px;color:var(--part2);opacity:.7">
+          ⏱ 1 daqiqa tayyorlanasiz, keyin gapiring
+        </div>
+      </div>`;
+    document.getElementById('questionLabel').textContent = 'Mavzu';
+    document.getElementById('questionText').textContent = q.topic;
+    startTimer(60, true);
+  } else {
+    document.getElementById('cueCardArea').style.display = 'none';
+    document.getElementById('questionLabel').textContent =
+      'IELTS Speaking ' + (state.currentPart === 1 ? 'Part 1 — Personal Question' : 'Part 3 — Discussion Question');
+    document.getElementById('questionText').textContent = q;
+    startTimer(120, false);
+  }
+}
+
+// ─── TIMER ────────────────────────────────────────────────────
+function startTimer(secs, isPrep) {
+  clearInterval(state.timerInterval);
+  state.timerSeconds = 0;
+  state.maxSeconds = secs;
+  document.getElementById('timerLabel').textContent = isPrep ? 'Tayyorlanish vaqti' : 'Javob vaqti';
+
+  state.timerInterval = setInterval(() => {
+    state.timerSeconds++;
+    const rem = Math.max(0, state.maxSeconds - state.timerSeconds);
+    document.getElementById('timerText').textContent =
+      String(Math.floor(rem / 60)).padStart(2, '0') + ':' + String(rem % 60).padStart(2, '0');
+
+    const pct = ((state.maxSeconds - state.timerSeconds) / state.maxSeconds) * 100;
+    const fill = document.getElementById('timerFill');
+    fill.style.width = Math.max(0, pct) + '%';
+    fill.style.background = pct < 25 ? 'var(--red)' : pct < 50 ? 'var(--gold)' : 'var(--accent2)';
+
+    if (rem === 0) {
+      clearInterval(state.timerInterval);
+      if (isPrep) startTimer(120, false);
+    }
+  }, 1000);
+}
+
+// ─── MIC ──────────────────────────────────────────────────────
+function toggleMic() {
+  if (!state.isRecording) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      alert("Bu brauzer ovoz yozishni qo'llab-quvvatlamaydi. Iltimos, matn kiriting.");
+      return;
+    }
+    state.recognition = new SR();
+    state.recognition.lang = 'en-US';
+    state.recognition.continuous = true;
+    state.recognition.interimResults = true;
+    let finalText = document.getElementById('answerInput').value;
+
+    state.recognition.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+        else interim = e.results[i][0].transcript;
+      }
+      document.getElementById('answerInput').value = finalText + interim;
+    };
+    state.recognition.onerror = () => stopMic();
+    state.recognition.start();
+    state.isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micBtn').textContent = '⏹';
+    document.getElementById('micLabel').textContent = "Gapiryapsiz... (to'xtatish uchun bosing)";
+  } else {
+    stopMic();
+  }
+}
+
+function stopMic() {
+  if (state.recognition) { state.recognition.stop(); state.recognition = null; }
+  state.isRecording = false;
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micBtn').textContent = '🎤';
+  document.getElementById('micLabel').textContent = 'Bosib gapiring';
+}
+
+// ─── SUBMIT ───────────────────────────────────────────────────
+async function submitAnswer() {
+  const answer = document.getElementById('answerInput').value.trim();
+  if (!answer) {
+    document.getElementById('answerInput').style.borderColor = 'var(--red)';
+    setTimeout(() => document.getElementById('answerInput').style.borderColor = 'var(--border)', 1500);
+    return;
+  }
+  clearInterval(state.timerInterval);
+  if (state.isRecording) stopMic();
+  showLoading('AI Examiner baholayapti...');
+
+  const question = state.currentPart === 2 ? state.currentQuestion.topic : state.currentQuestion;
+  const partDesc = {
+    1: 'IELTS Speaking Part 1 (Personal/introductory questions)',
+    2: 'IELTS Speaking Part 2 (Individual long turn / cue card)',
+    3: 'IELTS Speaking Part 3 (Two-way discussion / abstract topics)'
+  }[state.currentPart];
+
+  const prompt = `You are a certified IELTS examiner working for IELTS Doctor AI platform. Evaluate this response.
+
+PART: ${partDesc}
+QUESTION: ${question}
+CANDIDATE ANSWER: ${answer}
+
+Return ONLY valid JSON, no markdown, no extra text:
+{
+  "band": <4.0-9.0, one decimal>,
+  "fluency": <4-9 integer>,
+  "lexical": <4-9 integer>,
+  "grammar": <4-9 integer>,
+  "pronunciation": <4-9 integer>,
+  "level": "<e.g. Upper-Intermediate, Advanced, B2, C1>",
+  "strengths": "<2-3 specific strengths written in Uzbek language>",
+  "improvements": "<2-3 specific areas to improve written in Uzbek language>",
+  "example": "<A natural model answer in English, 2-3 sentences>"
+}`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content[0].text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(raw);
+
+    // Save session
+    const session = {
+      part: state.currentPart,
+      question: question.substring(0, 60) + (question.length > 60 ? '...' : ''),
+      band: result.band,
+      date: new Date().toLocaleDateString('uz-UZ'),
+      time: new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }),
+    };
+    state.sessions.unshift(session);
+    if (state.sessions.length > 50) state.sessions.pop();
+    localStorage.setItem('ielts_doctor_sessions', JSON.stringify(state.sessions));
+
+    // Update streak
+    const today = new Date().toDateString();
+    if (state.lastDate !== today) {
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      state.streak = (state.lastDate === yesterday) ? state.streak + 1 : 1;
+      state.lastDate = today;
+      localStorage.setItem('ielts_doctor_streak', state.streak);
+      localStorage.setItem('ielts_doctor_lastDate', today);
+    }
+
+    hideLoading();
+    showFeedback(result);
+  } catch (err) {
+    hideLoading();
+    console.error(err);
+    alert("Xatolik yuz berdi. Internet aloqasini tekshiring va qayta urinib ko'ring.");
+  }
+}
+
+// ─── FEEDBACK ─────────────────────────────────────────────────
+function showFeedback(r) {
+  document.getElementById('fbBand').textContent = r.band;
+  document.getElementById('fbLevel').textContent = r.level || '';
+  document.getElementById('fbPartLabel').textContent = 'Part ' + state.currentPart + ' · IELTS Doctor';
+
+  const criteria = [
+    { name: 'Fluency & Coherence', val: r.fluency,      color: 'var(--accent)' },
+    { name: 'Lexical Resource',    val: r.lexical,      color: 'var(--part2)'  },
+    { name: 'Grammar Range',       val: r.grammar,      color: 'var(--accent2)'},
+    { name: 'Pronunciation',       val: r.pronunciation,color: 'var(--part3)'  },
+  ];
+
+  document.getElementById('criteriaGrid').innerHTML = criteria.map(c => {
+    const pct = ((c.val - 4) / 5) * 100;
+    return `<div class="criterion">
+      <div class="criterion-name">${c.name}</div>
+      <div class="criterion-bar"><div class="criterion-fill" style="width:${pct}%;background:${c.color}"></div></div>
+      <div class="criterion-score" style="color:${c.color}">${c.val}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('fbStrengths').textContent = r.strengths;
+  document.getElementById('fbImprov').textContent = r.improvements;
+
+  if (r.example) {
+    document.getElementById('exampleCard').style.display = 'block';
+    document.getElementById('fbExample').textContent = r.example;
+  } else {
+    document.getElementById('exampleCard').style.display = 'none';
+  }
+
+  showScreen('feedback');
+}
+
+// ─── PROGRESS ─────────────────────────────────────────────────
+function renderProgress() {
+  const s = state.sessions;
+  if (s.length === 0) return;
+
+  const last7 = s.slice(0, 7).reverse();
+  document.getElementById('progressBars').innerHTML = last7.map(x => {
+    const h = ((x.band - 4) / 5) * 70 + 10;
+    return `<div class="chart-bar-wrap">
+      <div style="font-size:10px;color:var(--accent);font-weight:600">${x.band}</div>
+      <div class="chart-bar" style="height:${h}px"></div>
+      <div class="chart-bar-label">P${x.part}</div>
+    </div>`;
+  }).join('');
+
+  const pc = { 1: 'var(--part1)', 2: 'var(--part2)', 3: 'var(--part3)' };
+  document.getElementById('historyList').innerHTML = s.slice(0, 15).map(x => `
+    <div class="history-item">
+      <div class="history-part-dot" style="background:${pc[x.part]}"></div>
+      <div class="history-info">
+        <div class="history-q">${x.question}</div>
+        <div class="history-meta">Part ${x.part} · ${x.date} ${x.time}</div>
+      </div>
+      <div class="history-band">${x.band}</div>
+    </div>`).join('');
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────
+function nextQuestion() { loadQuestion(); showScreen('speaking'); }
+
+function showLoading(text) {
+  document.getElementById('loadingText').textContent = text;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+renderHome();
+</script>
+</body>
+</html>
